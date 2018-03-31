@@ -22,10 +22,11 @@ type pixel struct {
 }
 
 type imageConfig struct {
-	path  string
-	width int
-	x     int
-	y     int
+	path       string
+	width      int
+	x          int
+	y          int
+	linesToUse int
 }
 
 //creates a random distribution of pixels
@@ -198,8 +199,9 @@ func printHeader() {
 func printConfig(ip string, port string, imgCfg imageConfig) {
 	fmt.Println("server:   " + ip + ":" + port)
 	fmt.Println("image:    " + imgCfg.path)
-	fmt.Println(" - x,y:   " + its(imgCfg.x) + ", " + its(imgCfg.y))
-	fmt.Println(" - width: " + its(imgCfg.width))
+	fmt.Println(" - x,y:       " + its(imgCfg.x) + ", " + its(imgCfg.y))
+	fmt.Println(" - width:     " + its(imgCfg.width))
+	fmt.Println(" - skip lins: " + its(imgCfg.linesToUse))
 }
 
 func main() {
@@ -212,14 +214,14 @@ func main() {
 	ip := os.Args[1]
 	port := os.Args[2]
 	numWorkers := sti(os.Args[7])
-	pixelSkipModule := 1
+	imgCfg.linesToUse = 1
 	if len(os.Args) > 8 {
-		pixelSkipModule = sti(os.Args[8])
+		imgCfg.linesToUse = sti(os.Args[8])
 	}
 	printConfig(ip, port, imgCfg)
 
 	image := getImage(imgCfg)
-	pixelCommandMap := buildRandomPixelCommandMap(imgCfg, image, pixelSkipModule)
+	pixelCommandMap := buildRandomPixelCommandMap(imgCfg, image, imgCfg.linesToUse)
 	sendPixelCommandMapMulti(pixelCommandMap, ip+":"+port, numWorkers)
 	var input string
 	fmt.Scanln(&input)
