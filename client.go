@@ -110,14 +110,32 @@ func chunkPixelSlices(pcs []string, numChunks int) [][]string {
 }
 
 func sendPixelWorker(workerNumber int, maxWorkers int, wpcs []string, addr string, commandsPerConnection int) {
-	fmt.Println(" >> worker " + its(workerNumber) + "/"  + its(maxWorkers)  + ": sending pixels ... ")
+	wns := "worker " + its(workerNumber) + "/" + its(maxWorkers)
+	fmt.Println(" >>" + wns  + ": sending pixels ... ")
 	numCommands := len(wpcs)
+	conn, err := net.Dial("tcp", addr)
+	if err != nil {
+		fmt.Println(err)
+		fmt.Println(" >>" + wns + ": died")
+		return
+	}
 	for true {
 		for i:= 0; i < numCommands; i++ {
 			//TODO implement commandsPerConnection
-			sendPixel(wpcs[i], addr)
+			sendPixel2(wpcs[i], conn)
 		}
 	}
+	conn.Close()
+}
+
+func sendPixel2(spc string, conn net.Conn) {
+	w := bufio.NewWriter(conn)
+	_, err := w.WriteString(spc)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	err = w.Flush()
 }
 
 func sendPixel(spc string, addr string) {
