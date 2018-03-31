@@ -30,20 +30,22 @@ type imageConfig struct {
 
 //creates a random distribution of pixels
 //https://stackoverflow.com/questions/8697095/how-to-read-a-png-file-in-color-and-output-as-gray-scale-using-the-go-programmin
-func buildRandomPixelCommandMap(imgCfg imageConfig, image image.Image) []string {
+func buildRandomPixelCommandMap(imgCfg imageConfig, image image.Image, skipPixelModulo int) []string {
 	//extracting pixel data from image
 	fmt.Println("Extracting pixel data from image ...")
 	imageBounds := image.Bounds()
 	w, h := imageBounds.Max.X, imageBounds.Max.Y
-	numPixels := w * h
-	pixelSlice := make([]string, numPixels)
+	pixelSlice := make([]string, 1)
 
 	//loop over image and fill pixel slice with ready made write pixel commands
 	sliceIdx := 0
 	for x := 0; x < w; x++ {
 		for y := 0; y < h; y++ {
-			color := image.At(x, y)
-			pixelSlice[sliceIdx] = genPFWCFP(pixel{x: imgCfg.x + x, y: imgCfg.y + y, color: color})
+			if (sliceIdx)%skipPixelModulo == 0 {
+				color := image.At(x, y)
+				cmd := genPFWCFP(pixel{x: imgCfg.x + x, y: imgCfg.y + y, color: color})
+				pixelSlice = append(pixelSlice, cmd)
+			}
 			sliceIdx = sliceIdx + 1
 		}
 	}
@@ -182,10 +184,10 @@ func genPFWCFP(p pixel) string {
 
 func printUsage() {
 	fmt.Println("usage:")
-	fmt.Println(" client <IP> >PORT> <FILEPATH> <WIDTH> <X> <Y> <NUMBER OF WORKERS>")
+	fmt.Println(" client <IP> >PORT> <FILEPATH> <WIDTH> <X> <Y> <NUMBER OF WORKERS> [<SKIP PIXEL MODULO>]")
 	fmt.Println("")
 	fmt.Println("example:")
-	fmt.Println(" client 94.45.232.48 1234 Logo_leiter.png 800 42 23 10")
+	fmt.Println(" client 94.45.232.48 1234 Logo_leiter.png 800 42 23 10 2")
 }
 
 func printHeader() {
@@ -202,7 +204,7 @@ func printConfig(ip string, port string, imgCfg imageConfig) {
 
 func main() {
 	printHeader()
-	if len(os.Args) != 8 {
+	if len(os.Args) < 8 {
 		printUsage()
 		return
 	}
@@ -210,10 +212,14 @@ func main() {
 	ip := os.Args[1]
 	port := os.Args[2]
 	numWorkers := sti(os.Args[7])
+	pixelSkipModule := 1
+	if len(os.Args) > 8 {
+		pixelSkipModule = sti(os.Args[8])
+	}
 	printConfig(ip, port, imgCfg)
 
 	image := getImage(imgCfg)
-	pixelCommandMap := buildRandomPixelCommandMap(imgCfg, image)
+	pixelCommandMap := buildRandomPixelCommandMap(imgCfg, image, pixelSkipModule)
 	sendPixelCommandMapMulti(pixelCommandMap, ip+":"+port, numWorkers)
 	var input string
 	fmt.Scanln(&input)
