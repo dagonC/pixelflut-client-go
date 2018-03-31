@@ -1,30 +1,31 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"image"
 	"image/color"
 	"image/png"
-	"os"
 	"math/rand"
-	"time"
-	"bufio"
 	"net"
+	"os"
 	"strconv"
+	"time"
+
 	"github.com/nfnt/resize"
 )
 
 type pixel struct {
-	x int
-	y int
+	x     int
+	y     int
 	color color.Color
 }
 
 type imageConfig struct {
-	path string
+	path  string
 	width int
-	x int
-	y int
+	x     int
+	y     int
 }
 
 //creates a random distribution of pixels
@@ -32,7 +33,6 @@ type imageConfig struct {
 func buildRandomPixelCommandMap(imgCfg imageConfig, image image.Image) []string {
 	//extracting pixel data from image
 	fmt.Println("Extracting pixel data from image ...")
-
 	imageBounds := image.Bounds()
 	w, h := imageBounds.Max.X, imageBounds.Max.Y
 	numPixels := w * h
@@ -53,12 +53,11 @@ func buildRandomPixelCommandMap(imgCfg imageConfig, image image.Image) []string 
 	//shuffle pixelSlice
 	fmt.Println("Shuffling pixel data")
 	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(len(pixelSlice), func(i, j int) { pixelSlice[i], pixelSlice[j] = pixelSlice[j], pixelSlice[i]})
+	rand.Shuffle(len(pixelSlice), func(i, j int) { pixelSlice[i], pixelSlice[j] = pixelSlice[j], pixelSlice[i] })
 	fmt.Println("done.")
 
 	return pixelSlice
 }
-
 
 func getImage(imgCfg imageConfig) image.Image {
 	infile, err := os.Open(imgCfg.path)
@@ -99,68 +98,61 @@ func chunkPixelSlices(pcs []string, numChunks int) [][]string {
 	chunkSize := (lenPcs + numChunks - 1) / numChunks
 
 	for i := 0; i < lenPcs; i += chunkSize {
-	    end := i + chunkSize
+		end := i + chunkSize
 
-	    if end > lenPcs {
-		end = lenPcs
-	    }
-	    chunked = append(chunked, pcs[i:end])
+		if end > lenPcs {
+			end = lenPcs
+		}
+		chunked = append(chunked, pcs[i:end])
 	}
 	return chunked
 }
 
 func sendPixelWorker(workerNumber int, maxWorkers int, wpcs []string, addr string, commandsPerConnection int) {
 	wns := "worker " + its(workerNumber) + "/" + its(maxWorkers)
-	fmt.Println(" >>" + wns  + ": sending pixels ... ")
+	fmt.Println(" >>" + wns + ": sending pixels ... ")
 	numCommands := len(wpcs)
-	conn, err := net.Dial("tcp", addr)
-	if err != nil {
-		fmt.Println(err)
-		fmt.Println(" >>" + wns + ": died")
-		return
-	}
+	var conn net.Conn
+	var err error
+	reconnect := true
 	for true {
-		for i:= 0; i < numCommands; i++ {
+		for i := 0; i < numCommands; i++ {
+			if reconnect == true {
+				fmt.Println("connecting...")
+				conn, err = net.Dial("tcp", addr)
+				if err != nil {
+					fmt.Println(err)
+					continue
+				} else {
+					reconnect = false
+				}
+			}
 			cmd := wpcs[i]
 			if cmd != "" {
-				sendPixel2(wpcs[i], conn)
+				_, err := sendPixel2(wpcs[i], conn)
+				if err != nil {
+					if conn != nil {
+						conn.Close()
+					}
+					reconnect = true
+				}
 			}
 		}
 	}
-	conn.Close()
+	if conn != nil {
+		conn.Close()
+	}
 }
 
-func sendPixel2(spc string, conn net.Conn) {
+func sendPixel2(spc string, conn net.Conn) (int, error) {
 	w := bufio.NewWriter(conn)
-	_, err := w.WriteString(spc)
+	bytesWritten, err := w.WriteString(spc)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return 0, err
 	}
 	err = w.Flush()
-}
-
-func sendPixel(spc string, addr string) {
-	conn, err := net.Dial("tcp", addr)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	//rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
-	rw := bufio.NewWriter(conn)
-	_, err = rw.WriteString(spc)
-	if err != nil {
-		fmt.Println(err)
-		conn.Close()
-		return
-	}
-	err = rw.Flush()
-	if err != nil {
-		fmt.Println(err)
-		conn.Close()
-		return
-	}
-	conn.Close()
+	return bytesWritten, nil
 }
 
 func its(number int) string {
@@ -181,10 +173,10 @@ func sti(str string) int {
 
 func genPFWCFP(p pixel) string {
 	r, g, b, a := p.color.RGBA()
-	cmd := ""
-	if a == 0 {
-		cmd = "PX " + its(p.x) + " " + its(p.y) + " " + iths(r) + iths(g) + iths(b) + iths(a) + "\n"
-	}
+	//cmd := ""
+	//if a == 0 {
+	cmd := "PX " + its(p.x) + " " + its(p.y) + " " + iths(r) + iths(g) + iths(b) + iths(a) + "\n"
+	//}
 	return cmd
 }
 
@@ -222,7 +214,7 @@ func main() {
 
 	image := getImage(imgCfg)
 	pixelCommandMap := buildRandomPixelCommandMap(imgCfg, image)
-	sendPixelCommandMapMulti(pixelCommandMap, ip + ":" + port, numWorkers)
+	sendPixelCommandMapMulti(pixelCommandMap, ip+":"+port, numWorkers)
 	var input string
 	fmt.Scanln(&input)
 }
