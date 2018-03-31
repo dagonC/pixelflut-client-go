@@ -173,10 +173,10 @@ func sti(str string) int {
 
 func genPFWCFP(p pixel) string {
 	r, g, b, a := p.color.RGBA()
-	//cmd := ""
-	//if a == 0 {
-	cmd := "PX " + its(p.x) + " " + its(p.y) + " " + iths(r) + iths(g) + iths(b) + iths(a) + "\n"
-	//}
+	cmd := ""
+	if a != 0 {
+		cmd = "PX " + its(p.x) + " " + its(p.y) + " " + iths(r) + iths(g) + iths(b) + iths(a) + "\n"
+	}
 	return cmd
 }
 
