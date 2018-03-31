@@ -4,8 +4,8 @@ dirty hack, bad software design, bad quality, no documentation ... work in progr
 ## Usage
 ```
 usage:
- client <IP> >PORT> <FILEPATH> <WIDTH> <X> <Y>
+ client <IP> >PORT> <FILEPATH> <WIDTH> <X> <Y> <NUMBER OF WORKERS>
 
 example:
- client 94.45.232.48 1234 Logo_leiter.png 800 42 23
+ client 94.45.232.48 1234 Logo_leiter.png 800 42 23 10
 ```

@@ -184,10 +184,10 @@ func genPFWCFP(p pixel) string {
 
 func printUsage() {
 	fmt.Println("usage:")
-	fmt.Println(" client <IP> >PORT> <FILEPATH> <WIDTH> <X> <Y>")
+	fmt.Println(" client <IP> >PORT> <FILEPATH> <WIDTH> <X> <Y> <NUMBER OF WORKERS>")
 	fmt.Println("")
 	fmt.Println("example:")
-	fmt.Println(" client 94.45.232.48 1234 Logo_leiter.png 800 42 23")
+	fmt.Println(" client 94.45.232.48 1234 Logo_leiter.png 800 42 23 10")
 }
 
 func printHeader() {
@@ -204,18 +204,19 @@ func printConfig(ip string, port string, imgCfg imageConfig) {
 
 func main() {
 	printHeader()
-	if len(os.Args) != 7 {
+	if len(os.Args) != 8 {
 		printUsage()
 		return
 	}
 	imgCfg := imageConfig{path: os.Args[3], width: sti(os.Args[4]), x: sti(os.Args[5]), y: sti(os.Args[6])}
 	ip := os.Args[1]
 	port := os.Args[2]
+	numWorkers := sti(os.Args[7])
 	printConfig(ip, port, imgCfg)
 
 	image := getImage(imgCfg)
 	pixelCommandMap := buildRandomPixelCommandMap(imgCfg, image)
-	sendPixelCommandMapMulti(pixelCommandMap, ip + ":" + port, 10)
+	sendPixelCommandMapMulti(pixelCommandMap, ip + ":" + port, numWorkers)
 	var input string
 	fmt.Scanln(&input)
 }
