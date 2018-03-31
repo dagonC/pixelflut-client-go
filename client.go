@@ -121,8 +121,10 @@ func sendPixelWorker(workerNumber int, maxWorkers int, wpcs []string, addr strin
 	}
 	for true {
 		for i:= 0; i < numCommands; i++ {
-			//TODO implement commandsPerConnection
-			sendPixel2(wpcs[i], conn)
+			cmd := wpcs[i]
+			if cmd != "" {
+				sendPixel2(wpcs[i], conn)
+			}
 		}
 	}
 	conn.Close()
@@ -179,7 +181,11 @@ func sti(str string) int {
 
 func genPFWCFP(p pixel) string {
 	r, g, b, a := p.color.RGBA()
-	return "PX " + its(p.x) + " " + its(p.y) + " " + iths(r) + iths(g) + iths(b) + iths(a) + "\n"
+	cmd := ""
+	if a == 0 {
+		cmd = "PX " + its(p.x) + " " + its(p.y) + " " + iths(r) + iths(g) + iths(b) + iths(a) + "\n"
+	}
+	return cmd
 }
 
 func printUsage() {
